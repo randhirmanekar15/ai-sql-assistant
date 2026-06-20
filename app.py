@@ -28,8 +28,12 @@ if question:
     with st.spinner("Analyzing database..."):
         try:
             result = _chain().invoke({"query": question})
+            # Normalize: SQLDatabaseChain may return a dict ({"result": ...}) or a
+            # bare value depending on version. Show a clean string either way.
+            if isinstance(result, dict):
+                result = result.get("result", result)
             st.subheader("Answer")
-            st.success(result)
+            st.success(str(result))
         except Exception:  # noqa: BLE001  show a friendly tip, not a stack trace
             st.error("I couldn't answer that one.")
             st.info(

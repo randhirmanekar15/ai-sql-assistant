@@ -23,6 +23,15 @@ def build_chain():
     from langchain_experimental.sql import SQLDatabaseChain
     from langchain_ollama import OllamaLLM
 
+    # Enforce read-only rather than trusting the env value: the chain executes
+    # generated SQL, so a writable SQLite URI would let a hallucinated query mutate
+    # data. Refuse to start unless a SQLite connection is explicitly read-only.
+    if READONLY_URI.startswith("sqlite") and "mode=ro" not in READONLY_URI:
+        raise ValueError(
+            "Refusing to start: SQL_ASSISTANT_DB must be a read-only SQLite URI "
+            "(include 'mode=ro&uri=true'). The chain executes generated SQL."
+        )
+
     db = SQLDatabase.from_uri(READONLY_URI)
     # temperature=0: we want deterministic, precise SQL, not creative writing.
     llm = OllamaLLM(model=MODEL, temperature=0)
